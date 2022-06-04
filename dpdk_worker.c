@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <sched.h>
+#include <sys/time.h>
 #include "e1000_poc.h"
 
 /**
@@ -28,11 +29,12 @@ static inline void rte_prefetch0(const volatile void *p)
 }
 #define rte_em_prefetch(p)      rte_prefetch0(p)
 
-uint64_t s_dma_addr = 0;
-uint64_t s_last_recv_addr = (uint64_t)-1;
-uint16_t s_rx_tail = 0;
-uint16_t s_nb_rx_hold = 0;
-uint32_t g_nb_rx_desc = RX_DESC_NUM;
+static uint64_t s_dma_addr = 0;
+static uint64_t s_last_recv_addr = (uint64_t)-1;
+static uint16_t s_rx_tail = 0;
+static uint16_t s_nb_rx_hold = 0;
+static uint32_t g_nb_rx_desc = RX_DESC_NUM;
+static int s_vlog = 0;
 
 uint16_t
 eth_em_recv_pkts(uint16_t nb_pkts)
@@ -63,6 +65,12 @@ eth_em_recv_pkts(uint16_t nb_pkts)
                 if (! (status & E1000_RXD_STAT_DD))
                         break;
                 rxd = *rxdp;
+
+                if (s_vlog) {
+                    struct timeval tv;
+                    gettimeofday(&tv, NULL);
+                    printf("[%ld.%03ld] DPDK: GET rx_id=%hu\n", tv.tv_sec, tv.tv_usec / 1000, rx_id);
+                }
 
                 nb_hold++;
                 rx_id++;
@@ -122,6 +130,8 @@ void dpdk_init(void)
     }
     rx_id = g_nb_rx_desc - 1;
     E1000_PCI_REG_WRITE(&g_shm->rdt, rx_id);
+
+    s_vlog = atoi(getenv("DPDK_VLOG") ? : "0");
 }
 
 void *dpdk_worker(void *arg)

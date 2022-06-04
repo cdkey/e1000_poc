@@ -36,6 +36,8 @@ do { \
 #define mac_reg_RDT (((volatile struct share_mem*)g_shm)->rdt)
 #define mac_reg_RDLEN (RX_DESC_NUM * sizeof(struct e1000_rx_desc))
 
+static uint8_t s_vlan_status = 0;
+
 static int e1000_has_rxbufs(size_t total_size)
 {
     int bufs;
@@ -73,6 +75,8 @@ e1000_receive_iov(size_t total_size)
         base = rx_desc_base(s) + sizeof(desc) * mac_reg_RDH;
         pci_dma_read(d, base, &desc, sizeof(desc));
         desc.special = vlan_special;
+        s_vlan_status += 2;
+        vlan_status = s_vlan_status;
 #if WITH_PATCH
         desc.status &= (~E1000_RXD_STAT_DD);
 #else
@@ -99,6 +103,13 @@ e1000_receive_iov(size_t total_size)
     return total_size;
 }
 
+static void maybe_hang(void)
+{
+    printf("Qemu: Maybe hang RDH=%u RDT=%u\n",
+           mac_reg_RDH, mac_reg_RDT);
+    sleep(1);
+}
+
 void *qemu_worker(void *arg)
 {
     uint32_t ok_count = 0;
@@ -111,9 +122,7 @@ void *qemu_worker(void *arg)
         if (e1000_receive_iov(1) < 0) {
             nobuf_count++;
             if (!(nobuf_count & 0xfffff)) {
-                printf("Qemu: Maybe hang RDH=%u RDT=%u\n",
-                       mac_reg_RDH, mac_reg_RDT);
-                sleep(1);
+                maybe_hang();
             }
             sched_yield();
             continue;
