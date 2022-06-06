@@ -12,8 +12,8 @@
 #include <time.h>
 #include "e1000_poc.h"
 
-#ifndef WITH_PATCH
-#define WITH_PATCH 0
+#ifndef WITH_QEMU_PATCH
+#define WITH_QEMU_PATCH 0
 #endif
 
 #define smp_mb() ({ asm volatile("mfence" ::: "memory"); (void)0; })
@@ -77,7 +77,7 @@ e1000_receive_iov(size_t total_size)
         desc.special = vlan_special;
         s_vlan_status += 2;
         vlan_status = s_vlan_status;
-#if WITH_PATCH
+#if WITH_QEMU_PATCH
         desc.status &= (~E1000_RXD_STAT_DD);
 #else
         desc.status |= (vlan_status | E1000_RXD_STAT_DD);
@@ -85,7 +85,7 @@ e1000_receive_iov(size_t total_size)
         desc_offset++;
 
         pci_dma_write(d, base, &desc, sizeof(desc));
-#if WITH_PATCH
+#if WITH_QEMU_PATCH
         desc.status |= (vlan_status | E1000_RXD_STAT_DD);
         pci_dma_write(d, base + offsetof(struct e1000_rx_desc, status),
                       &desc.status, sizeof(desc.status));

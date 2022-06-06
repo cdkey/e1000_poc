@@ -8,6 +8,10 @@
 #include <sys/time.h>
 #include "e1000_poc.h"
 
+#ifndef WITH_DPDK_PATCH
+#define WITH_DPDK_PATCH 0
+#endif
+
 /**
  * Compiler barrier.
  *
@@ -46,12 +50,20 @@ eth_em_recv_pkts(uint16_t nb_pkts)
         uint16_t nb_rx;
         uint16_t nb_hold;
         uint8_t status;
+#if WITH_DPDK_PATCH
+        uint16_t rx_head = g_shm->rdh;
+#endif
 
         nb_rx = 0;
         nb_hold = 0;
         rx_id = s_rx_tail;
         rx_ring = g_shm->rx_rings;
         while (nb_rx < nb_pkts) {
+#if WITH_DPDK_PATCH
+                /* RDH is always not ready, try next scan */
+                if (rx_id == rx_head)
+                        break;
+#endif
                 /*
                  * The order of operations here is important as the DD status
                  * bit must not be read after any other descriptor fields.

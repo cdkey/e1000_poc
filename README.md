@@ -51,14 +51,22 @@ but not `ssse3`
 ## Patch Test
 
 Qemu writing rx desc is not quite correct, we can test set DD status
-in a separate operation by `WITH_PATCH=1`
+in a separate operation by `WITH_QEMU_PATCH=1`
 
 ```
-make WITH_PATCH=1
+make WITH_QEMU_PATCH=1
 make run
 ```
 
 this patch let rx running as expected with whatever new or old glibc memcpy
+
+Modify dpdk rx code also can prevent concurrent writing status, the RDH
+desc is always hold by hardware, can be treat as not ready, try `WITH_DPDK_PATCH=1`
+
+```
+make WITH_DPDK_PATCH=1
+make run
+```
 
 ## Why RDH == RDT ?
 
