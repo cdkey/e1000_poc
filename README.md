@@ -145,6 +145,11 @@ gs             0x0                 0
 
 Or another situation: missing write status `0` after handle a rx packet
 
+When Qemu using XMM related instructions writing 16 bytes e1000_rx_desc,
+concurrent with DPDK using movb writing 1 byte status, the final result of
+writing to memory will be one of them, if it made by Qemu which DD flag is on,
+DPDK will consume it again, that cause RDH == RDT.
+
 ## Tips
 
 - Use gdb hw watchpoint can easier to reproduce the issue
