@@ -150,6 +150,9 @@ concurrent with DPDK using movb writing 1 byte status, the final result of
 writing to memory will be one of them, if it made by Qemu which DD flag is on,
 DPDK will consume it again, that cause RDH == RDT.
 
+Mix using non-temporal store (16bytes in qemu) and temporal load (1byte in vm)
+concurrently.
+
 ## Tips
 
 - Use gdb hw watchpoint can easier to reproduce the issue
@@ -188,4 +191,6 @@ gdb -p `pidof e1000_poc` -x gdb.cmd
 
 - https://lore.kernel.org/qemu-devel/20200102110504.GG121208@stefanha-x1.localdomain/T/#m25ddd33f3ce777521fb42e42c975eb309e1bf349
 - https://github.com/BASM/qemu_dpdk_e1000_test
-
+- https://gitlab.com/qemu-project/qemu/-/issues/402
+- https://gitlab.com/qemu-project/qemu/-/commit/034d00d4858161e1d4cff82d8d230bce874a04d3
+- https://gitlab.com/qemu-project/qemu/-/commit/8dc2779180f0cadd7df93a946b84c8117955d299
