@@ -19,7 +19,7 @@ make run
 - If your glibc <= 2.19, rx running as expected, without error log
 
 - If your glibc >= 2.21, dpdk rx will catch unexpected buffer_addr,
-and Qemu e1000 rx maybe hang duo to full rx_ring (RDH == RDT)
+and Qemu e1000 rx maybe hang due to full rx_ring (RDH == RDT)
 
 I print the log to dentify if the issue has occurred:
 
