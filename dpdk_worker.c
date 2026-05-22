@@ -18,20 +18,61 @@
  * Guarantees that operation reordering does not occur at compile time
  * for operations directly before and after the barrier.
  */
+
+#if defined(__x86_64__) || defined(__i386__)
 #define rte_compiler_barrier() do {             \
         asm volatile ("" : : : "memory");       \
 } while(0)
+#define rte_smp_rmb() asm volatile ("" : : : "memory")
+static inline void rte_prefetch0(const volatile void *p)
+{
+        asm volatile ("prefetcht0 %[p]" : : [p] "m" (*(const volatile char *)p));
+}
+
+static inline void rte_prefetch1(const volatile void *p)
+{
+        asm volatile ("prefetcht1 %[p]" : : [p] "m" (*(const volatile char *)p));
+}
+#elif defined(__aarch64__)
+#define rte_smp_rmb() asm volatile("dmb ishld" : : : "memory")
+#define rte_smp_mb() asm volatile("dmb ish" : : : "memory")
+#define rte_smp_wmb() asm volatile("dmb ishst" : : : "memory")
+#define rte_compiler_barrier() do {                     \
+        asm volatile("dmb ishst" : : : "memory");       \
+} while(0)
+static inline void rte_prefetch0(const volatile void *p)
+{
+        asm volatile ("PRFM PLDL1KEEP, [%0]" : : "r" (p));
+}
+
+static inline void rte_prefetch1(const volatile void *p)
+{
+        asm volatile ("PRFM PLDL2KEEP, [%0]" : : "r" (p));
+}
+#else
+static inline void rte_prefetch0(const volatile void *p)
+{
+        (void)p;
+}
+
+static inline void rte_prefetch1(const volatile void *p)
+{
+        (void)p;
+}
+#endif
+
 #define E1000_PCI_REG_WRITE(reg, value) \
 do { \
     rte_compiler_barrier(); \
     *(volatile uint32_t*)(reg) = (value); \
 } while (0)
 
-static inline void rte_prefetch0(const volatile void *p)
-{
-        asm volatile ("prefetcht0 %[p]" : : [p] "m" (*(const volatile char *)p));
-}
-#define rte_em_prefetch(p)      rte_prefetch0(p)
+
+/**
+ * The choice between using `rte_em_prefetch0` or `rte_prefetch1` depends on the implementation
+ * of `rte_em_prefetch` in the `eth_em_recv_pkts` function in the actual DPDK code.
+ */
+#define rte_em_prefetch(p) rte_prefetch1(p)
 
 static uint64_t s_dma_addr = 0;
 static uint64_t s_last_recv_addr = (uint64_t)-1;

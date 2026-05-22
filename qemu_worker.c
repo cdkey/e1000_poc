@@ -16,7 +16,14 @@
 #define WITH_QEMU_PATCH 0
 #endif
 
+#if defined(__x86_64__) || defined(__i386__)
 #define smp_mb() ({ asm volatile("mfence" ::: "memory"); (void)0; })
+#elif defined(__aarch64__)
+#define smp_mb() __sync_synchronize()
+#define smp_wmb() asm volatile("dmb ishst" : : : "memory")
+#else
+#define smp_mb() ({ asm volatile("" ::: "memory"); (void)0; })
+#endif
 
 #define pci_dma_read(d, addr, buf, len) \
 do { \

@@ -20,9 +20,9 @@ struct e1000_rx_desc {
 
 struct share_mem
 {
-    struct e1000_rx_desc rx_rings[RX_DESC_NUM];
-    uint32_t rdh;
-    uint32_t rdt;
+    volatile struct e1000_rx_desc rx_rings[RX_DESC_NUM];
+    volatile uint32_t rdh;
+    volatile uint32_t rdt;
 };
 
 extern int g_exit;
